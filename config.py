@@ -44,12 +44,35 @@ class Config:
     gemini_max_retries: int = 5  # 最大重试次数
     gemini_retry_delay: float = 5.0  # 重试基础延时（秒）
     
+    # OpenAI 兼容 API（备选，当 Gemini 不可用时使用）
+    openai_api_key: Optional[str] = None
+    openai_base_url: Optional[str] = None  # 如: https://api.openai.com/v1
+    openai_model: str = "gpt-4o-mini"  # OpenAI 兼容模型名称
+    
     # === 搜索引擎配置（支持多 Key 负载均衡）===
     tavily_api_keys: List[str] = field(default_factory=list)  # Tavily API Keys
     serpapi_keys: List[str] = field(default_factory=list)  # SerpAPI Keys
     
-    # === 通知配置 ===
+    # === 通知配置（可同时配置多个，全部推送）===
+    
+    # 企业微信 Webhook
     wechat_webhook_url: Optional[str] = None
+    
+    # 飞书 Webhook
+    feishu_webhook_url: Optional[str] = None
+    
+    # Telegram 配置（需要同时配置 Bot Token 和 Chat ID）
+    telegram_bot_token: Optional[str] = None  # Bot Token（@BotFather 获取）
+    telegram_chat_id: Optional[str] = None  # Chat ID
+    
+    # 邮件配置（只需邮箱和授权码，SMTP 自动识别）
+    email_sender: Optional[str] = None  # 发件人邮箱
+    email_password: Optional[str] = None  # 邮箱密码/授权码
+    email_receivers: List[str] = field(default_factory=list)  # 收件人列表（留空则发给自己）
+    
+    # 自定义 Webhook（支持多个，逗号分隔）
+    # 适用于：钉钉、Discord、Slack、自建服务等任意支持 POST JSON 的 Webhook
+    custom_webhook_urls: List[str] = field(default_factory=list)
     
     # === 数据库配置 ===
     database_path: str = "./data/stock_analysis.db"
@@ -127,7 +150,7 @@ class Config:
         tavily_keys_str = os.getenv('TAVILY_API_KEYS', '')
         tavily_api_keys = [k.strip() for k in tavily_keys_str.split(',') if k.strip()]
         
-        serpapi_keys_str = os.getenv('SERPAPI_KEYS', '')
+        serpapi_keys_str = os.getenv('SERPAPI_API_KEYS', '')
         serpapi_keys = [k.strip() for k in serpapi_keys_str.split(',') if k.strip()]
         
         return cls(
@@ -139,9 +162,19 @@ class Config:
             gemini_request_delay=float(os.getenv('GEMINI_REQUEST_DELAY', '2.0')),
             gemini_max_retries=int(os.getenv('GEMINI_MAX_RETRIES', '5')),
             gemini_retry_delay=float(os.getenv('GEMINI_RETRY_DELAY', '5.0')),
+            openai_api_key=os.getenv('OPENAI_API_KEY'),
+            openai_base_url=os.getenv('OPENAI_BASE_URL'),
+            openai_model=os.getenv('OPENAI_MODEL', 'gpt-4o-mini'),
             tavily_api_keys=tavily_api_keys,
             serpapi_keys=serpapi_keys,
             wechat_webhook_url=os.getenv('WECHAT_WEBHOOK_URL'),
+            feishu_webhook_url=os.getenv('FEISHU_WEBHOOK_URL'),
+            telegram_bot_token=os.getenv('TELEGRAM_BOT_TOKEN'),
+            telegram_chat_id=os.getenv('TELEGRAM_CHAT_ID'),
+            email_sender=os.getenv('EMAIL_SENDER'),
+            email_password=os.getenv('EMAIL_PASSWORD'),
+            email_receivers=[r.strip() for r in os.getenv('EMAIL_RECEIVERS', '').split(',') if r.strip()],
+            custom_webhook_urls=[u.strip() for u in os.getenv('CUSTOM_WEBHOOK_URLS', '').split(',') if u.strip()],
             database_path=os.getenv('DATABASE_PATH', './data/stock_analysis.db'),
             log_dir=os.getenv('LOG_DIR', './logs'),
             log_level=os.getenv('LOG_LEVEL', 'INFO'),
@@ -172,14 +205,23 @@ class Config:
         if not self.tushare_token:
             warnings.append("提示：未配置 Tushare Token，将使用其他数据源")
         
-        if not self.gemini_api_key:
-            warnings.append("警告：未配置 Gemini API Key，AI 分析功能将不可用")
+        if not self.gemini_api_key and not self.openai_api_key:
+            warnings.append("警告：未配置 Gemini 或 OpenAI API Key，AI 分析功能将不可用")
+        elif not self.gemini_api_key:
+            warnings.append("提示：未配置 Gemini API Key，将使用 OpenAI 兼容 API")
         
         if not self.tavily_api_keys and not self.serpapi_keys:
             warnings.append("提示：未配置搜索引擎 API Key (Tavily/SerpAPI)，新闻搜索功能将不可用")
         
-        if not self.wechat_webhook_url:
-            warnings.append("提示：未配置企业微信 Webhook，将不发送推送通知")
+        # 检查通知配置
+        has_notification = (
+            self.wechat_webhook_url or 
+            self.feishu_webhook_url or
+            (self.telegram_bot_token and self.telegram_chat_id) or
+            (self.email_sender and self.email_password)
+        )
+        if not has_notification:
+            warnings.append("提示：未配置通知渠道，将不发送推送通知")
         
         return warnings
     
