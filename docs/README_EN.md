@@ -90,6 +90,7 @@ Go to your forked repo → `Settings` → `Secrets and variables` → `Actions` 
 |------------|------|:----:|
 | `TELEGRAM_BOT_TOKEN` | Telegram Bot Token (Get from @BotFather) | Optional |
 | `TELEGRAM_CHAT_ID` | Telegram Chat ID | Optional |
+| `TELEGRAM_MESSAGE_THREAD_ID` | Telegram Topic ID (For sending to topics) | Optional |
 | `DISCORD_WEBHOOK_URL` | Discord Webhook URL | Optional |
 | `DISCORD_BOT_TOKEN` | Discord Bot Token (choose one with Webhook) | Optional |
 | `DISCORD_CHANNEL_ID` | Discord Channel ID (required when using Bot) | Optional |
@@ -99,6 +100,7 @@ Go to your forked repo → `Settings` → `Secrets and variables` → `Actions` 
 | `WECHAT_WEBHOOK_URL` | WeChat Work Webhook URL | Optional |
 | `FEISHU_WEBHOOK_URL` | Feishu Webhook URL | Optional |
 | `PUSHPLUS_TOKEN` | PushPlus Token ([Get it here](https://www.pushplus.plus), Chinese push service) | Optional |
+| `SERVERCHAN3_SENDKEY` | ServerChan v3 SendKey (([Get it here](https://sc3.ft07.com/), Mobile app push notification service) ) | Optional |
 | `CUSTOM_WEBHOOK_URLS` | Custom Webhook URLs (supports DingTalk, etc., comma-separated) | Optional |
 | `CUSTOM_WEBHOOK_BEARER_TOKEN` | Bearer token for custom webhooks (if required) | Optional |
 | `SINGLE_STOCK_NOTIFY` | Send notification immediately after each stock | Optional |
@@ -205,6 +207,17 @@ python main.py --stocks AAPL,TSLA,GOOGL
 # Market review only
 python main.py --market-review
 ```
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|------|------|------|
+| `/` | GET | Configuration page |
+| `/health` | GET | Health check |
+| `/analysis?code=xxx` | GET | Trigger async analysis for a single stock |
+| `/analysis/history` | GET | Query analysis history records |
+| `/tasks` | GET | Query all task statuses |
+| `/task?id=xxx` | GET | Query a single task status |
 
 ---
 
@@ -448,4 +461,4 @@ The developers of this tool are not liable for any financial losses resulting fr
 - GitHub Issues: [Report bugs or request features](https://github.com/ZhuLinsen/daily_stock_analysis/issues)
 - Discussions: [Join discussions](https://github.com/ZhuLinsen/daily_stock_analysis/discussions)
 
----
+----
